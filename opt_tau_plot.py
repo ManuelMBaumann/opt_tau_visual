@@ -1,4 +1,5 @@
 from numpy import pi, sin, cos, sqrt
+from math import atan2, atan
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button, RadioButtons
@@ -24,11 +25,27 @@ def calc_circles(om, tau):
     e   = -om[0].imag/om[0].real
     C   = 0.0 + 1j*( (e*abs(tau)**2)/(2.0*tau.imag*(tau.imag+e*tau.real)) )
     R   = sqrt( abs(tau)**2*(e**2+1.0)/(4.0*(tau.imag+e*tau.real)**2) )
-    ck  = np.zeros((len(om),))
+    ck  = np.zeros((len(om),), dtype=complex)
     for k in range(0,len(om)):
         ck[k] = -np.conj(tau)/(tau-np.conj(tau)) - eta[k]
     r  = abs(tau/(tau-np.conj(tau)))
     return C, R, ck, r
+
+def draw_circles(tau_re, tau_im, om):
+    C, R, ck, r = calc_circles(om, tau_re+1j*tau_im)
+    X   = R*np.cos(th)+C.real
+    Y   = R*np.sin(th)+C.imag
+    [line] = ax.plot(X, Y, 'k')
+    ax.plot(C.real, C.imag, 'kx', markersize=10)
+    
+    for k in range(0,len(om)):
+        x = r*np.cos(th)+ck[k].real
+        y = r*np.sin(th)+ck[k].imag
+        ax.plot(x, y, col[k]+'--')
+        ax.plot(ck.real, ck.imag, col[k]+'x', markersize=10)
+            
+    return [line]
+    
 
 def signal(amp, freq):
     return amp * sin(2 * pi * freq * t)
@@ -37,15 +54,40 @@ axis_color = 'lightgoldenrodyellow'
 fig = plt.figure()
 
 # Draw the plot
+Nom  = 5
+fmin = 1
+fmax = 9
+eps  = 0.05
+freq = np.linspace(fmin,fmax,Nom)
+om   = 2.0*np.pi*freq*(1.0-1j*eps)
+tau = opt_tau_anal(eps,om[0].real,om[-1].real) 
+
+NOP = 1000
+th  = np.linspace(0.0,2.0*pi,NOP)
+
+cc  = list('grcmy')
+col = list('b')
+j = -1
+for k in range(1,Nom-1):
+    j=j+1
+    if (j>4):
+        j=0
+    col.append(cc[j])
+col.append('b')
+
+eta = om/(om-tau)
+    
 ax = fig.add_subplot(111)
 fig.subplots_adjust(left=0.25, bottom=0.25)
 t = np.arange(-5, 5, 0.01)
-amp_0 = 5
-freq_0 = 3
-[line] = ax.plot(t, signal(amp_0, freq_0), linewidth=2, color='red')
+amp_0 = tau.real
+freq_0 = tau.imag
+[line] = draw_circles(tau.real, tau.imag, om)
+#[line] = ax.plot(t, signal(amp_0, freq_0), linewidth=2, color='red')
 ax.set_xlim([-5, 5])
 ax.set_ylim([-5, 5])
 ax.axis('equal')
+
 
 # Add two sliders for tweaking the parameters
 amp_slider_ax  = fig.add_axes([0.25, 0.15, 0.65, 0.03], axisbg=axis_color)
