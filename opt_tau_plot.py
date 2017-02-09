@@ -41,30 +41,58 @@ def draw_circles(tau_re, tau_im, eps, freq):
     X   = R*np.cos(th)+C.real
     Y   = R*np.sin(th)+C.imag
 
-    ax.plot(X, Y, 'k')
-    ax.plot(C.real, C.imag, 'kx', markersize=10)
+    #fig.subplots_adjust(left=0.25, bottom=0.25)
+
+    lC1, = ax.plot(X, Y, 'k')
+    lC2, = ax.plot(C.real, C.imag, 'kx', markersize=10)
     
+    lc1 = []
+    lc2 = []
     for k in range(0,len(om)):
         x = r*np.cos(th)+c[k].real
         y = r*np.sin(th)+c[k].imag
-        ax.plot(x, y, col[k]+'--')
-        ax.plot(c[k].real, c[k].imag, color=col[k], marker='x', markersize=10)
+        l1, = ax.plot(x, y, col[k]+'--')
+        l2, = ax.plot(c[k].real, c[k].imag, color=col[k], marker='x', markersize=10)
+        lc1.append(l1)
+        lc2.append(l2)
         
     ax.axhline(linewidth=0.5, color='k')
     ax.axvline(linewidth=0.5, color='k')
     
+    return lC1, lC2, lc1, lc2
+    
+def upd_circles(tau_re, tau_im, eps, freq):
+    om  = 2.0*pi*freq*(1.0-1j*eps)
+    NOP = 1000
+    th  = np.linspace(0.0, 2.0*pi, NOP)
+    
+    C, R, c, r = calc_circles(freq, tau_re+1j*tau_im, eps)
+    X   = R*np.cos(th)+C.real
+    Y   = R*np.sin(th)+C.imag
+
+    lC1.set_xdata(X)
+    lC1.set_ydata(Y)
+    lC2.set_xdata(C.real)
+    lC2.set_ydata(C.imag)
+    for k in range(0,len(om)):
+        x = r*np.cos(th)+c[k].real
+        y = r*np.sin(th)+c[k].imag
+        lc1[k].set_xdata(x)
+        lc1[k].set_ydata(y)
+        lc2[k].set_xdata(c[k].real)
+        lc2[k].set_ydata(c[k].imag)
+        
 
 axis_color = 'lightgoldenrodyellow'
-fig = plt.figure()
 
-# Draw the plot
+# Default params
 Nom  = 5
 fmin = 1.0
 fmax = 9.0
-eps  = 0.5
+eps  = 0.3
 freq = np.linspace(fmin,fmax,Nom)
 om   = 2.0*np.pi*freq*(1.0-1j*eps)
-tau = opt_tau_anal(eps,om[0].real,om[-1].real) 
+tau  = opt_tau_anal(eps,om[0].real,om[-1].real) 
 
 cc  = list('grcmy')
 col = list('b')
@@ -76,12 +104,14 @@ for k in range(1,Nom-1):
     col.append(cc[j])
 col.append('b')
     
+fig = plt.figure()
 ax = fig.add_subplot(111)
-fig.subplots_adjust(left=0.25, bottom=0.25)
-draw_circles(tau.real, tau.imag, eps, freq)
 ax.set_xlim([-5, 5])
 ax.set_ylim([-5, 5])
 ax.axis('equal')
+fig.subplots_adjust(left=0.25, bottom=0.25)
+
+lC1, lC2, lc1, lc2 = draw_circles(tau.real, tau.imag, eps, freq)
 
 
 # Add two sliders for tweaking the parameters
@@ -91,12 +121,17 @@ tau_re_slider_ax  = fig.add_axes([0.25, 0.15, 0.65, 0.03], axisbg=axis_color)
 tau_re_slider     = Slider(tau_re_slider_ax, r'Re($\tau$)', 0.0, om[-1].real, valinit=tau.real)
 tau_im_slider_ax  = fig.add_axes([0.25, 0.1, 0.65, 0.03], axisbg=axis_color)
 tau_im_slider     = Slider(tau_im_slider_ax, r'Im($\tau$)', -om[-1].real, 0.0, valinit=tau.imag)
+
 def sliders_on_changed(val):
-    draw_circles(tau_re_slider.val, tau_im_slider.val, eps_slider.val, freq)
+    print( J(eps_slider.val, min(om.real), max(om.real), tau_re_slider.val+1j*tau_im_slider.val) )
+    #draw_circles(tau_re_slider.val, tau_im_slider.val, eps_slider.val, freq)
+    upd_circles(tau_re_slider.val, tau_im_slider.val, eps_slider.val, freq)
     fig.canvas.draw_idle()
+
 eps_slider.on_changed(sliders_on_changed)
 tau_re_slider.on_changed(sliders_on_changed)
 tau_im_slider.on_changed(sliders_on_changed)
+
 
 # Add a button for resetting the parameters
 reset_button_ax = fig.add_axes([0.8, 0.25, 0.1, 0.04])
