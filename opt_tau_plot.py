@@ -95,7 +95,7 @@ def upd_circles(tau_re, tau_im, eps, freq, Jopt):
         txt.set_color('black')
     
 # Default params
-Nom  = 5
+Nom  = 8
 fmin = 1.0
 fmax = 9.0
 eps  = 0.3
@@ -125,24 +125,22 @@ lC1, lC2, lc1, lc2, txt = draw_circles(tau.real, tau.imag, eps, freq)
 
 
 # Add two sliders for tweaking the parameters
-eps_slider_ax     = fig.add_axes([0.25, 0.05, 0.65, 0.03], axisbg=axis_color)
-eps_slider        = Slider(eps_slider_ax, r'$\epsilon$', 0.0, 1.0, valinit=eps)
-tau_re_slider_ax  = fig.add_axes([0.25, 0.15, 0.65, 0.03], axisbg=axis_color)
-tau_re_slider     = Slider(tau_re_slider_ax, r'Re($\tau$)', 0.0, om[-1].real/(2*pi*fmax), valinit=tau.real/(2*pi*fmax))
-tau_im_slider_ax  = fig.add_axes([0.25, 0.1, 0.65, 0.03], axisbg=axis_color)
-tau_im_slider     = Slider(tau_im_slider_ax, r'Im($\tau$)', -om[-1].real/(2*pi*fmax), 0.0, valinit=tau.imag/(2*pi*fmax))
-
-
-fmin_slider_ax     = fig.add_axes([0.04, 0.8, 0.15, 0.05], axisbg=axis_color)
-fmin_slider        = Slider(fmin_slider_ax, r'$f_{min}$', 0.5, 20.0, valinit=fmin)
-fmax_slider_ax     = fig.add_axes([0.04, 0.7, 0.15, 0.05], axisbg=axis_color)
-fmax_slider        = Slider(fmax_slider_ax, r'$f_{max}$', 1.0, 20.0, valinit=fmax)
-Nom_slider_ax     = fig.add_axes([0.04, 0.6, 0.15, 0.05], axisbg=axis_color)
-Nom_slider        = Slider(Nom_slider_ax, r'$N_f$', 3, 10, valinit=Nom, valfmt='%0.0f')
+eps_slider_ax    = fig.add_axes([0.25, 0.05, 0.65, 0.03], axisbg=axis_color)
+eps_slider       = Slider(eps_slider_ax, r'$\epsilon$', 0.0, 1.0, valinit=eps)
+tau_re_slider_ax = fig.add_axes([0.25, 0.15, 0.65, 0.03], axisbg=axis_color)
+tau_re_slider    = Slider(tau_re_slider_ax, r'Re($\tau$)', 0.0, om[-1].real/(2*pi*fmax), valinit=tau.real/(2*pi*fmax))
+tau_im_slider_ax = fig.add_axes([0.25, 0.1, 0.65, 0.03], axisbg=axis_color)
+tau_im_slider    = Slider(tau_im_slider_ax, r'Im($\tau$)', -om[-1].real/(2*pi*fmax), 0.0, valinit=tau.imag/(2*pi*fmax))
+fmin_slider_ax   = fig.add_axes([0.04, 0.8, 0.15, 0.05], axisbg=axis_color)
+fmin_slider      = Slider(fmin_slider_ax, r'$f_{min}$', 0.5, 20.0, valinit=fmin)
+fmax_slider_ax   = fig.add_axes([0.04, 0.7, 0.15, 0.05], axisbg=axis_color)
+fmax_slider      = Slider(fmax_slider_ax, r'$f_{max}$', 1.0, 20.0, valinit=fmax)
+Nom_slider_ax    = fig.add_axes([0.04, 0.6, 0.15, 0.05], axisbg=axis_color)
+Nom_slider       = Slider(Nom_slider_ax, r'$N_f$', 3, 10, valinit=Nom, valfmt='%0.0f')
 
 def sliders_on_changed(val):
     #print( J(eps_slider.val, min(om.real), max(om.real),tau= tau_re_slider.val+1j*tau_im_slider.val) )
-    upd_circles(tau_re_slider.val*2*pi*fmax, tau_im_slider.val*2*pi*fmax, eps_slider.val, freq, Jopt)
+    upd_circles(tau_re_slider.val*(2*pi*fmax), tau_im_slider.val*(2*pi*fmax), eps_slider.val, freq, Jopt)
     #print(int(round(Nom_slider.val)))
     fig.canvas.draw_idle()
 
@@ -166,15 +164,5 @@ def reset_button_on_clicked(mouse_event):
     Nom_slider.reset()
     
 reset_button.on_clicked(reset_button_on_clicked)
-
-## Add a set of radio buttons for changing color
-#color_radios_ax = fig.add_axes([0.025, 0.7, 0.15, 0.2], axisbg=axis_color)
-#color_radios = RadioButtons(color_radios_ax, ('fmin = ', 'fmax = ', r'$N_f = $'), active=0)
-#def color_radios_on_clicked(label):
-    #line.set_color(label)
-    #fig.canvas.draw_idle()
-#color_radios.on_clicked(color_radios_on_clicked)
-
-#J_ax = fig.add_axes([0.25, 0.7, 0.15, 0.2], axisbg=axis_color)
 
 plt.show()
