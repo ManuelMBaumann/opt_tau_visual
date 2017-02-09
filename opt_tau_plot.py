@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button, RadioButtons
 
+axis_color = 'lightgoldenrodyellow'
 
 def opt_tau_anal(e,w,W):    
     r  = sqrt(w*W*(1.0+e**2))
@@ -59,9 +60,13 @@ def draw_circles(tau_re, tau_im, eps, freq):
     ax.axhline(linewidth=0.5, color='k')
     ax.axvline(linewidth=0.5, color='k')
     
-    return lC1, lC2, lc1, lc2
+    Jopt = J(eps, min(om.real), max(om.real), tau=tau_re+1j*tau_im)
+    txt  = ax.text(1.2, 1.7, r'$\mathcal{J} = $'+str(round(Jopt,4)), fontsize=22)
     
-def upd_circles(tau_re, tau_im, eps, freq):
+    
+    return lC1, lC2, lc1, lc2, txt
+    
+def upd_circles(tau_re, tau_im, eps, freq, Jopt):
     om  = 2.0*pi*freq*(1.0-1j*eps)
     NOP = 1000
     th  = np.linspace(0.0, 2.0*pi, NOP)
@@ -82,9 +87,13 @@ def upd_circles(tau_re, tau_im, eps, freq):
         lc2[k].set_xdata(c[k].real)
         lc2[k].set_ydata(c[k].imag)
         
-
-axis_color = 'lightgoldenrodyellow'
-
+    Jnew = J(eps, min(om.real), max(om.real), tau=tau_re+1j*tau_im)
+    txt.set_text(r'$\mathcal{J} = $'+str(round(J(eps, min(om.real), max(om.real), tau=tau_re+1j*tau_im),4)))
+    if Jnew<Jopt:
+        txt.set_color('red')
+    else:
+        txt.set_color('black')
+    
 # Default params
 Nom  = 5
 fmin = 1.0
@@ -93,6 +102,7 @@ eps  = 0.3
 freq = np.linspace(fmin,fmax,Nom)
 om   = 2.0*np.pi*freq*(1.0-1j*eps)
 tau  = opt_tau_anal(eps,om[0].real,om[-1].real) 
+Jopt = J(eps, min(om.real), max(om.real), tau=tau)
 
 cc  = list('grcmy')
 col = list('b')
@@ -111,44 +121,59 @@ ax.set_ylim([-5, 5])
 ax.axis('equal')
 fig.subplots_adjust(left=0.25, bottom=0.25)
 
-lC1, lC2, lc1, lc2 = draw_circles(tau.real, tau.imag, eps, freq)
+lC1, lC2, lc1, lc2, txt = draw_circles(tau.real, tau.imag, eps, freq)
 
 
 # Add two sliders for tweaking the parameters
 eps_slider_ax     = fig.add_axes([0.25, 0.05, 0.65, 0.03], axisbg=axis_color)
 eps_slider        = Slider(eps_slider_ax, r'$\epsilon$', 0.0, 1.0, valinit=eps)
 tau_re_slider_ax  = fig.add_axes([0.25, 0.15, 0.65, 0.03], axisbg=axis_color)
-tau_re_slider     = Slider(tau_re_slider_ax, r'Re($\tau$)', 0.0, om[-1].real, valinit=tau.real)
+tau_re_slider     = Slider(tau_re_slider_ax, r'Re($\tau$)', 0.0, om[-1].real/(2*pi*fmax), valinit=tau.real/(2*pi*fmax))
 tau_im_slider_ax  = fig.add_axes([0.25, 0.1, 0.65, 0.03], axisbg=axis_color)
-tau_im_slider     = Slider(tau_im_slider_ax, r'Im($\tau$)', -om[-1].real, 0.0, valinit=tau.imag)
+tau_im_slider     = Slider(tau_im_slider_ax, r'Im($\tau$)', -om[-1].real/(2*pi*fmax), 0.0, valinit=tau.imag/(2*pi*fmax))
+
+
+fmin_slider_ax     = fig.add_axes([0.04, 0.8, 0.15, 0.05], axisbg=axis_color)
+fmin_slider        = Slider(fmin_slider_ax, r'$f_{min}$', 0.5, 20.0, valinit=fmin)
+fmax_slider_ax     = fig.add_axes([0.04, 0.7, 0.15, 0.05], axisbg=axis_color)
+fmax_slider        = Slider(fmax_slider_ax, r'$f_{max}$', 1.0, 20.0, valinit=fmax)
+Nom_slider_ax     = fig.add_axes([0.04, 0.6, 0.15, 0.05], axisbg=axis_color)
+Nom_slider        = Slider(Nom_slider_ax, r'$N_f$', 3, 10, valinit=Nom, valfmt='%0.0f')
 
 def sliders_on_changed(val):
-    print( J(eps_slider.val, min(om.real), max(om.real), tau_re_slider.val+1j*tau_im_slider.val) )
-    #draw_circles(tau_re_slider.val, tau_im_slider.val, eps_slider.val, freq)
-    upd_circles(tau_re_slider.val, tau_im_slider.val, eps_slider.val, freq)
+    #print( J(eps_slider.val, min(om.real), max(om.real),tau= tau_re_slider.val+1j*tau_im_slider.val) )
+    upd_circles(tau_re_slider.val*2*pi*fmax, tau_im_slider.val*2*pi*fmax, eps_slider.val, freq, Jopt)
+    #print(int(round(Nom_slider.val)))
     fig.canvas.draw_idle()
 
 eps_slider.on_changed(sliders_on_changed)
 tau_re_slider.on_changed(sliders_on_changed)
 tau_im_slider.on_changed(sliders_on_changed)
+fmin_slider.on_changed(sliders_on_changed)
+fmax_slider.on_changed(sliders_on_changed)
+Nom_slider.on_changed(sliders_on_changed)
 
 
 # Add a button for resetting the parameters
-reset_button_ax = fig.add_axes([0.8, 0.25, 0.1, 0.04])
-reset_button = Button(reset_button_ax, r"Go to $\mathbf{\tau^\ast}$", color=axis_color, hovercolor='0.975')
+reset_button_ax = fig.add_axes([0.06, 0.12, 0.1, 0.04])
+reset_button = Button(reset_button_ax, r"Reset $\mathbf{\tau^\ast}$", color=axis_color, hovercolor='0.975')
 def reset_button_on_clicked(mouse_event):
     eps_slider.reset()
     tau_re_slider.reset()
     tau_im_slider.reset()
+    fmin_slider.reset()
+    fmax_slider.reset()
+    Nom_slider.reset()
+    
 reset_button.on_clicked(reset_button_on_clicked)
 
-# Add a set of radio buttons for changing color
-color_radios_ax = fig.add_axes([0.025, 0.7, 0.15, 0.2], axisbg=axis_color)
-color_radios = RadioButtons(color_radios_ax, ('fmin = ', 'fmax = ', r'$N_f = $'), active=0)
-def color_radios_on_clicked(label):
-    line.set_color(label)
-    fig.canvas.draw_idle()
-color_radios.on_clicked(color_radios_on_clicked)
+## Add a set of radio buttons for changing color
+#color_radios_ax = fig.add_axes([0.025, 0.7, 0.15, 0.2], axisbg=axis_color)
+#color_radios = RadioButtons(color_radios_ax, ('fmin = ', 'fmax = ', r'$N_f = $'), active=0)
+#def color_radios_on_clicked(label):
+    #line.set_color(label)
+    #fig.canvas.draw_idle()
+#color_radios.on_clicked(color_radios_on_clicked)
 
 #J_ax = fig.add_axes([0.25, 0.7, 0.15, 0.2], axisbg=axis_color)
 
