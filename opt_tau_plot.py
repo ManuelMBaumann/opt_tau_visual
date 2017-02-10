@@ -11,15 +11,24 @@ def opt_tau_anal(e,w,W):
     th = atan(-sqrt( (e**2*(W+w)**2+(W-w)**2) /(4.0*w*W) ))
     return r*cos(th) + 1j*(r*sin(th))
 
-def J(e, w, W, tau=False):
-    if not tau:
-        tau = opt_tau_anal(e,w,W)
+def J_opt(e, w, W):
+    tau = opt_tau_anal(e,w,W)
     r     = 0.5*np.sqrt(1.0 + (tau.real/tau.imag)**2)
     c1_im = tau.real/(2.0*tau.imag) - ((tau.imag+e*tau.real)*w)/((w-tau.real)**2+(e*w+tau.imag)**2)
     cN_im = tau.real/(2.0*tau.imag) - ((tau.imag+e*tau.real)*W)/((W-tau.real)**2+(e*W+tau.imag)**2)
     R     = np.sqrt(tau.real**2+tau.imag**2)*np.sqrt((e**2+1.0))/(2.0*abs(tau.real*e+tau.imag))
     C_im  = e*(tau.real**2+tau.imag**2)/(2.0*tau.imag*(tau.real*e+tau.imag))
     return np.sqrt(r**2/(R**2-C_im**2+2.0*C_im*c1_im))
+
+def J(e, om, tau):
+    eta    = om/(om-tau)
+    Jval = np.zeros((len(om),))
+    r = abs((tau - 0)/(tau - np.conj(tau)))
+    for k in range(len(om)):
+        ck = ((0.0 - np.conj(tau))/(tau - np.conj(tau)) - eta[k])
+        Jval[k] = r/abs(ck)
+    return np.max(Jval)
+    
   
 def calc_circles(freq, tau, e):
     om  = 2.0*pi*freq*(1.0-1j*e)
@@ -60,8 +69,9 @@ def draw_circles(tau_re, tau_im, eps, freq):
     ax.axhline(linewidth=0.5, color='k')
     ax.axvline(linewidth=0.5, color='k')
     
-    Jopt = J(eps, min(om.real), max(om.real), tau=tau_re+1j*tau_im)
-    txt  = ax.text(1.2, 1.7, r'$\mathcal{J} = $'+str(round(Jopt,4)), fontsize=22)
+    #Jopt = J_opt(eps, min(om.real), max(om.real))
+    Jopt = J(eps, om, tau_re+1j*tau_im)
+    txt  = ax.text(0.7*ax.get_xlim()[1], 0.88*ax.get_ylim()[1], r'$\mathcal{J} = $'+str(round(Jopt,4)), fontsize=22)
     
     
     return lC1, lC2, lc1, lc2, txt
@@ -87,9 +97,10 @@ def upd_circles(tau_re, tau_im, eps, freq, Jopt):
         lc2[k].set_xdata(c[k].real)
         lc2[k].set_ydata(c[k].imag)
         
-    Jnew = J(eps, min(om.real), max(om.real), tau=tau_re+1j*tau_im)
-    txt.set_text(r'$\mathcal{J} = $'+str(round(J(eps, min(om.real), max(om.real), tau=tau_re+1j*tau_im),4)))
-    if Jnew<Jopt:
+    #Jnew = J(eps, min(om.real), max(om.real), tau=tau_re+1j*tau_im)
+    Jnew = J(eps, om, tau_re+1j*tau_im)
+    txt.set_text(r'$\mathcal{J} = $'+str(round(J(eps, om, tau_re+1j*tau_im),4)))
+    if (Jopt-Jnew)>1e-6:
         txt.set_color('red')
     else:
         txt.set_color('black')
@@ -98,21 +109,22 @@ def upd_circles(tau_re, tau_im, eps, freq, Jopt):
 Nom  = 8
 fmin = 1.0
 fmax = 9.0
-eps  = 0.3
+eps  = 0.7
 freq = np.linspace(fmin,fmax,Nom)
 om   = 2.0*np.pi*freq*(1.0-1j*eps)
 tau  = opt_tau_anal(eps,om[0].real,om[-1].real) 
-Jopt = J(eps, min(om.real), max(om.real), tau=tau)
+Jopt = J_opt(eps, min(om.real), max(om.real))
 
-cc  = list('grcmy')
-col = list('b')
+
+cc  = list('gbcmy')
+col = list('r')
 j = -1
 for k in range(1,Nom-1):
     j=j+1
     if (j>4):
         j=0
     col.append(cc[j])
-col.append('b')
+col.append('r')
     
 fig = plt.figure()
 ax = fig.add_subplot(111)
