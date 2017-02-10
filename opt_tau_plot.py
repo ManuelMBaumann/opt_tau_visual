@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button, RadioButtons
 
 axis_color = 'lightgoldenrodyellow'
+Nom_min = 3
+Nom_max = 10
 
 def opt_tau_anal(e,w,W):    
     r  = sqrt(w*W*(1.0+e**2))
@@ -20,7 +22,7 @@ def J_opt(e, w, W):
     C_im  = e*(tau.real**2+tau.imag**2)/(2.0*tau.imag*(tau.real*e+tau.imag))
     return np.sqrt(r**2/(R**2-C_im**2+2.0*C_im*c1_im))
 
-def J(e, om, tau):
+def J(om, tau):
     eta    = om/(om-tau)
     Jval = np.zeros((len(om),))
     r = abs((tau - 0)/(tau - np.conj(tau)))
@@ -70,11 +72,11 @@ def draw_circles(tau_re, tau_im, eps, freq):
     ax.axvline(linewidth=0.5, color='k')
     
     #Jopt = J_opt(eps, min(om.real), max(om.real))
-    Jopt = J(eps, om, tau_re+1j*tau_im)
+    Jopt = J(om, tau_re+1j*tau_im)
     txt  = ax.text(0.7*ax.get_xlim()[1], 0.88*ax.get_ylim()[1], r'$\mathcal{J} = $'+str(round(Jopt,4)), fontsize=22)
+    txt2  = ax.text(0.7*ax.get_xlim()[1], 0.8*ax.get_ylim()[1], r'$\mathcal{J}^\ast = $'+str(round(Jopt,4)), fontsize=15)
     
-    
-    return lC1, lC2, lc1, lc2, txt
+    return lC1, lC2, lc1, lc2, txt, txt2
     
 def upd_circles(tau_re, tau_im, eps, freq, Jopt):
     om  = 2.0*pi*freq*(1.0-1j*eps)
@@ -98,12 +100,14 @@ def upd_circles(tau_re, tau_im, eps, freq, Jopt):
         lc2[k].set_ydata(c[k].imag)
         
     #Jnew = J(eps, min(om.real), max(om.real), tau=tau_re+1j*tau_im)
-    Jnew = J(eps, om, tau_re+1j*tau_im)
-    txt.set_text(r'$\mathcal{J} = $'+str(round(J(eps, om, tau_re+1j*tau_im),4)))
+    Jnew = J(om, tau_re+1j*tau_im)
+    txt.set_text(r'$\mathcal{J} = $'+str(round(Jnew,4)))
+    txt2.set_text(r'$\mathcal{J}^\ast = $'+str(round(J_opt(eps, min(om.real), max(om.real)),4)))
     if (Jopt-Jnew)>1e-6:
         txt.set_color('red')
     else:
-        txt.set_color('black')
+        txt.set_color('black')    
+    
     
 # Default params
 Nom  = 8
@@ -114,7 +118,6 @@ freq = np.linspace(fmin,fmax,Nom)
 om   = 2.0*np.pi*freq*(1.0-1j*eps)
 tau  = opt_tau_anal(eps,om[0].real,om[-1].real) 
 Jopt = J_opt(eps, min(om.real), max(om.real))
-
 
 cc  = list('gbcmy')
 col = list('r')
@@ -133,48 +136,70 @@ ax.set_ylim([-5, 5])
 ax.axis('equal')
 fig.subplots_adjust(left=0.25, bottom=0.25)
 
-lC1, lC2, lc1, lc2, txt = draw_circles(tau.real, tau.imag, eps, freq)
+lC1, lC2, lc1, lc2, txt, txt2 = draw_circles(tau.real, tau.imag, eps, freq)
 
 
-# Add two sliders for tweaking the parameters
-eps_slider_ax    = fig.add_axes([0.25, 0.05, 0.65, 0.03], axisbg=axis_color)
+# Add sliders for tweaking the parameters
+eps_slider_ax    = fig.add_axes([0.04, 0.5, 0.15, 0.05], axisbg=axis_color)
 eps_slider       = Slider(eps_slider_ax, r'$\epsilon$', 0.0, 1.0, valinit=eps)
+
 tau_re_slider_ax = fig.add_axes([0.25, 0.15, 0.65, 0.03], axisbg=axis_color)
-tau_re_slider    = Slider(tau_re_slider_ax, r'Re($\tau$)', 0.0, om[-1].real/(2*pi*fmax), valinit=tau.real/(2*pi*fmax))
+tau_re_slider    = Slider(tau_re_slider_ax, r'Re($\tau$)', 0.0, 1.0, valinit=tau.real/(2*pi*fmax))
+tau_re_slider.vline.color='b'
 tau_im_slider_ax = fig.add_axes([0.25, 0.1, 0.65, 0.03], axisbg=axis_color)
-tau_im_slider    = Slider(tau_im_slider_ax, r'Im($\tau$)', -om[-1].real/(2*pi*fmax), 0.0, valinit=tau.imag/(2*pi*fmax))
+tau_im_slider    = Slider(tau_im_slider_ax, r'Im($\tau$)', -1.0, 0.0, valinit=tau.imag/(2*pi*fmax))
+tau_im_slider.vline = None
+
 fmin_slider_ax   = fig.add_axes([0.04, 0.8, 0.15, 0.05], axisbg=axis_color)
 fmin_slider      = Slider(fmin_slider_ax, r'$f_{min}$', 0.5, 20.0, valinit=fmin)
 fmax_slider_ax   = fig.add_axes([0.04, 0.7, 0.15, 0.05], axisbg=axis_color)
 fmax_slider      = Slider(fmax_slider_ax, r'$f_{max}$', 1.0, 20.0, valinit=fmax)
 Nom_slider_ax    = fig.add_axes([0.04, 0.6, 0.15, 0.05], axisbg=axis_color)
-Nom_slider       = Slider(Nom_slider_ax, r'$N_f$', 3, 10, valinit=Nom, valfmt='%0.0f')
+Nom_slider       = Slider(Nom_slider_ax, r'$N_f$', Nom_min, Nom_max, valinit=Nom, valfmt='%0.0f')
 
-def sliders_on_changed(val):
-    #print( J(eps_slider.val, min(om.real), max(om.real),tau= tau_re_slider.val+1j*tau_im_slider.val) )
+def sliders_on_changed1(val):
+    fmin = fmin_slider.val  
+    fmax = fmax_slider.val
+    Nom  = Nom_slider.val
+    freq = np.linspace(fmin,fmax,Nom)
+    
+    opt_tau = opt_tau_anal(eps_slider.val,2*pi*fmin,2*pi*fmax)
+    tau_re_slider.set_val( opt_tau.real/(2*pi*fmax) )
+    tau_im_slider.set_val( opt_tau.imag/(2*pi*fmax) )
+    
     upd_circles(tau_re_slider.val*(2*pi*fmax), tau_im_slider.val*(2*pi*fmax), eps_slider.val, freq, Jopt)
-    #print(int(round(Nom_slider.val)))
     fig.canvas.draw_idle()
 
-eps_slider.on_changed(sliders_on_changed)
-tau_re_slider.on_changed(sliders_on_changed)
-tau_im_slider.on_changed(sliders_on_changed)
-fmin_slider.on_changed(sliders_on_changed)
-fmax_slider.on_changed(sliders_on_changed)
-Nom_slider.on_changed(sliders_on_changed)
+def sliders_on_changed2(val):
+    fmin = fmin_slider.val  
+    fmax = fmax_slider.val
+    Nom  = Nom_slider.val
+    freq = np.linspace(fmin,fmax,Nom)
+    
+    upd_circles(tau_re_slider.val*(2*pi*fmax), tau_im_slider.val*(2*pi*fmax), eps_slider.val, freq, Jopt)
+    fig.canvas.draw_idle()
 
+eps_slider.on_changed(sliders_on_changed1)
+fmin_slider.on_changed(sliders_on_changed1)
+fmax_slider.on_changed(sliders_on_changed1)
+Nom_slider.on_changed(sliders_on_changed1)
+
+tau_re_slider.on_changed(sliders_on_changed2)
+tau_im_slider.on_changed(sliders_on_changed2)
 
 # Add a button for resetting the parameters
 reset_button_ax = fig.add_axes([0.06, 0.12, 0.1, 0.04])
 reset_button = Button(reset_button_ax, r"Reset $\mathbf{\tau^\ast}$", color=axis_color, hovercolor='0.975')
 def reset_button_on_clicked(mouse_event):
-    eps_slider.reset()
-    tau_re_slider.reset()
-    tau_im_slider.reset()
-    fmin_slider.reset()
-    fmax_slider.reset()
-    Nom_slider.reset()
+    fmin = fmin_slider.val  
+    fmax = fmax_slider.val
+    Nom  = Nom_slider.val
+    freq = np.linspace(fmin,fmax,Nom)
+    opt_tau = opt_tau_anal(eps_slider.val,2*pi*fmin,2*pi*fmax)
     
+    tau_re_slider.set_val( opt_tau.real/(2*pi*fmax) )
+    tau_im_slider.set_val( opt_tau.imag/(2*pi*fmax) )
+
 reset_button.on_clicked(reset_button_on_clicked)
 
 plt.show()
