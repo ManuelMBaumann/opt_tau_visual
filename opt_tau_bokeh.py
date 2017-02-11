@@ -2,7 +2,7 @@
 
 Use the ``bokeh serve`` command to run the example by executing:
 
-    bokeh serve opt_tau_online.py
+    bokeh serve opt_tau_bokeh.py
 
 at your command prompt. Then navigate to the URL
 
@@ -177,7 +177,13 @@ def update_data2(attrname, old, new):
         y = r*np.sin(th)+c[k].imag
         circ[k].data = dict(x=x, y=y)
         circ_cen[k].data = dict(x=[c[k].real], y=[c[k].imag])
-
+     
+    Jnew = J(2.0*pi*freq*(1.0-1j*eps_s.value), tau_re_s.value*(2*pi*fmax)+1j*tau_im_s.value*(2*pi*fmax))
+    Jopt = Jopt = J_opt(eps_s.value, 2*pi*fmin, 2*pi*fmax)
+    mytext.text = 'J = '+str(round(Jnew,4))
+    mytext2.text = 'J* = '+str(round(Jopt,4))
+     
+     
 
 def click():
     opt_tau = opt_tau_anal(eps_s.value,2*pi*fmin_s.value,2*pi*fmax_s.value)
