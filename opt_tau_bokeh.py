@@ -100,7 +100,7 @@ plot = figure(plot_height=640, plot_width=640, title="optimal_tau",
               x_range=[-2, 2], y_range=[-1, 3])
 
 mytext  = Label(x=-1.8, y=2.7, text='J = '+str(round(Jopt,4)), text_font_size='22pt')
-mytext2 = Label(x=-1.8, y=2.5, text='J* = '+str(round(Jopt,4)), text_font_size='16pt')
+mytext2 = Label(x=-1.8, y=2.5, text='J* = '+str(round(Jopt,4)), text_font_size='16pt', text_color="grey")
 plot.add_layout(mytext)
 plot.add_layout(mytext2)
 
