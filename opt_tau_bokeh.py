@@ -14,7 +14,7 @@ in your browser.
 
 from bokeh.io import curdoc, vform
 from bokeh.layouts import row, column, widgetbox
-from bokeh.models import ColumnDataSource, Spacer
+from bokeh.models import ColumnDataSource, Spacer, Label
 from bokeh.models.widgets import Slider, TextInput, Button
 from bokeh.plotting import figure
 
@@ -99,6 +99,11 @@ plot = figure(plot_height=640, plot_width=640, title="optimal_tau",
               tools="crosshair,pan,reset,save,wheel_zoom",
               x_range=[-2, 2], y_range=[-1, 3])
 
+mytext  = Label(x=-1.8, y=2.7, text='J = '+str(round(Jopt,4)), text_font_size='22pt')
+mytext2 = Label(x=-1.8, y=2.5, text='J* = '+str(round(Jopt,4)), text_font_size='16pt')
+plot.add_layout(mytext)
+plot.add_layout(mytext2)
+
 plot.line('x', 'y', source=bigC, line_width=3, line_alpha=0.6, line_color='black')
 plot.circle('x', 'y', source=bigC_cen, size=10, color="black", alpha=0.6)
 
@@ -144,6 +149,9 @@ def update_data1(attrname, old, new):
         circ[k].data = dict(x=x, y=y)
         circ_cen[k].data = dict(x=[c[k].real], y=[c[k].imag])
         
+    Jnew = J(2.0*pi*freq*(1.0-1j*eps_s.value), tau_re_s.value*(2*pi*fmax)+1j*tau_im_s.value*(2*pi*fmax))
+    mytext.text = 'J = '+str(round(Jnew,4))
+        
 
 def update_data2(attrname, old, new):
 
@@ -171,17 +179,25 @@ def update_data2(attrname, old, new):
         circ_cen[k].data = dict(x=[c[k].real], y=[c[k].imag])
 
 
+def click():
+    opt_tau = opt_tau_anal(eps_s.value,2*pi*fmin_s.value,2*pi*fmax_s.value)
+    tau_re_s.value = opt_tau.real/(2*pi*fmax)
+    tau_im_s.value = opt_tau.imag/(2*pi*fmax)
+    
+
 for w in [tau_re_s, tau_im_s]:
     w.on_change('value', update_data1)
-for w in [eps_s, fmin_s, fmax_s]:
-    w.on_change('value', update_data2)
-
+for ww in [eps_s, fmin_s, fmax_s]:
+    ww.on_change('value', update_data2)
+reset.on_click(click)
     
 # Set up layouts and add to document
 inputs_1 = widgetbox(tau_re_s, tau_im_s, eps_s)
 inputs_2 = widgetbox(Nom_text, fmin_s, fmax_s)
 inputs_3 = vform(reset)
 spacer_1 = Spacer(width=20, height=60)
+spacer_2 = Spacer(width=20, height=180)
 
-curdoc().add_root(row(column(inputs_1, spacer_1, inputs_2, inputs_3), plot, width=1200))
+
+curdoc().add_root(row(column(inputs_1, spacer_1, inputs_2, spacer_2, inputs_3), plot, width=1200))
 curdoc().title = "Optimal tau"
