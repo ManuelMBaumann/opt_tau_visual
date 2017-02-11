@@ -1,0 +1,187 @@
+'''
+
+Use the ``bokeh serve`` command to run the example by executing:
+
+    bokeh serve opt_tau_online.py
+
+at your command prompt. Then navigate to the URL
+
+    http://localhost:5006/opt_tau_online
+
+in your browser.
+
+'''
+
+from bokeh.io import curdoc, vform
+from bokeh.layouts import row, column, widgetbox
+from bokeh.models import ColumnDataSource, Spacer
+from bokeh.models.widgets import Slider, TextInput, Button
+from bokeh.plotting import figure
+
+import numpy as np
+from numpy import pi, sin, cos, sqrt
+from math import atan2, atan
+
+
+def opt_tau_anal(e,w,W):    
+    r  = sqrt(w*W*(1.0+e**2))
+    th = atan(-sqrt( (e**2*(W+w)**2+(W-w)**2) /(4.0*w*W) ))
+    return r*cos(th) + 1j*(r*sin(th))
+
+def J_opt(e, w, W):
+    tau = opt_tau_anal(e,w,W)
+    r     = 0.5*np.sqrt(1.0 + (tau.real/tau.imag)**2)
+    c1_im = tau.real/(2.0*tau.imag) - ((tau.imag+e*tau.real)*w)/((w-tau.real)**2+(e*w+tau.imag)**2)
+    cN_im = tau.real/(2.0*tau.imag) - ((tau.imag+e*tau.real)*W)/((W-tau.real)**2+(e*W+tau.imag)**2)
+    R     = np.sqrt(tau.real**2+tau.imag**2)*np.sqrt((e**2+1.0))/(2.0*abs(tau.real*e+tau.imag))
+    C_im  = e*(tau.real**2+tau.imag**2)/(2.0*tau.imag*(tau.real*e+tau.imag))
+    return np.sqrt(r**2/(R**2-C_im**2+2.0*C_im*c1_im))
+
+def J(om, tau):
+    eta    = om/(om-tau)
+    Jval = np.zeros((len(om),))
+    r = abs((tau - 0)/(tau - np.conj(tau)))
+    for k in range(len(om)):
+        ck = ((0.0 - np.conj(tau))/(tau - np.conj(tau)) - eta[k])
+        Jval[k] = r/abs(ck)
+    return np.max(Jval)
+    
+def calc_circles(freq, tau, e):
+    om  = 2.0*pi*freq*(1.0-1j*e)
+    eta = om/(om-tau)
+    C   = 0.0 + 1j*( (e*abs(tau)**2)/(2.0*tau.imag*(tau.imag+e*tau.real)) )
+    R   = sqrt( abs(tau)**2*(e**2+1.0)/(4.0*(tau.imag+e*tau.real)**2) )
+    ck  = np.zeros((len(om),), dtype=complex)
+    for k in range(0,len(om)):
+        ck[k] = -np.conj(tau)/(tau-np.conj(tau)) - eta[k]
+    r  = abs(tau/(tau-np.conj(tau)))
+    return C, R, ck, r
+
+
+# Set up data
+Nom  = 7
+fmin = 1.0
+fmax = 9.0
+eps  = 0.7
+freq = np.linspace(fmin,fmax,Nom)
+om   = 2.0*np.pi*freq*(1.0-1j*eps)
+tau  = opt_tau_anal(eps,om[0].real,om[-1].real) 
+Jopt = J_opt(eps, min(om.real), max(om.real))
+NOP  = 100
+th   = np.linspace(0.0, 2.0*pi, NOP)
+
+cc  = list(['green','blue','cyan','magenta','yellow'])
+col = list(['red'])
+j = -1
+for k in range(1,Nom-1):
+    j=j+1
+    if (j>4):
+        j=0
+    col.append(cc[j])
+col.append('red')
+
+C, R, c, r = calc_circles(freq, tau, eps)
+X   = R*np.cos(th)+C.real
+Y   = R*np.sin(th)+C.imag
+bigC = ColumnDataSource(data=dict(x=X, y=Y))
+bigC_cen = ColumnDataSource(data=dict(x=[C.real], y=[C.imag]))
+
+circ = []
+circ_cen = []
+for k in range(0,len(om)):
+    x = r*np.cos(th)+c[k].real
+    y = r*np.sin(th)+c[k].imag
+    circ.append(ColumnDataSource(data=dict(x=x, y=y)))
+    circ_cen.append(ColumnDataSource(data=dict(x=[c[k].real], y=[c[k].imag])))
+
+# Set up plot
+plot = figure(plot_height=640, plot_width=640, title="optimal_tau",
+              tools="crosshair,pan,reset,save,wheel_zoom",
+              x_range=[-2, 2], y_range=[-1, 3])
+
+plot.line('x', 'y', source=bigC, line_width=3, line_alpha=0.6, line_color='black')
+plot.circle('x', 'y', source=bigC_cen, size=10, color="black", alpha=0.6)
+
+for k in range(0,len(om)):
+    plot.line('x', 'y', source=circ[k], line_width=3, line_alpha=0.6, line_color=col[k])
+    plot.circle('x', 'y', source=circ_cen[k], size=8, color=col[k], alpha=0.6)
+
+
+# Set up widgets
+tau_re_s = Slider(title="Real(tau)", value=tau.real/(2*pi*fmax), start=0.0, end=1.0, step=0.001)
+tau_im_s = Slider(title="Imag(tau)", value=tau.imag/(2*pi*fmax), start=-1.0, end=0.0, step=0.001)
+
+eps_s    = Slider(title="damping", value=eps, start=0.0, end=1.0, step=0.01)
+Nom_text = TextInput(title="n_f = ", value=str(Nom))
+fmin_s   = Slider(title="f_min [Hz]", value=fmin, start=0.0, end=15.0, step=0.1)
+fmax_s   = Slider(title="f_max [Hz]", value=fmax, start=0.0, end=15.0, step=0.1)
+
+reset = Button(label="Reset to optimal tau")
+
+# Set up callbacks
+def update_title(attrname, old, new):
+    plot.title.Nom_text = Nom_text.value
+Nom_text.on_change('value', update_title)
+
+def update_data1(attrname, old, new):
+
+    # Get the current slider values
+    fmin = fmin_s.value
+    fmax = fmax_s.value
+    Nom  = int(Nom_text.value)
+    freq = np.linspace(fmin,fmax,Nom)
+    
+    C, R, c, r = calc_circles(freq, tau_re_s.value*(2*pi*fmax)+1j*tau_im_s.value*(2*pi*fmax), eps_s.value)
+    X   = R*np.cos(th)+C.real
+    Y   = R*np.sin(th)+C.imag
+
+    # Generate the new curveeps_s
+    bigC.data     = dict(x=X, y=Y)
+    bigC_cen.data = dict(x=[C.real], y=[C.imag])
+    for k in range(0,Nom):
+        x = r*np.cos(th)+c[k].real
+        y = r*np.sin(th)+c[k].imag
+        circ[k].data = dict(x=x, y=y)
+        circ_cen[k].data = dict(x=[c[k].real], y=[c[k].imag])
+        
+
+def update_data2(attrname, old, new):
+
+    # Get the current slider values
+    fmin = fmin_s.value
+    fmax = fmax_s.value
+    Nom  = int(Nom_text.value)
+    freq = np.linspace(fmin,fmax,Nom)
+    
+    opt_tau = opt_tau_anal(eps_s.value,2*pi*fmin,2*pi*fmax)
+    tau_re_s.value = opt_tau.real/(2*pi*fmax)
+    tau_im_s.value = opt_tau.imag/(2*pi*fmax)
+    
+    C, R, c, r = calc_circles(freq, tau_re_s.value*(2*pi*fmax)+1j*tau_im_s.value*(2*pi*fmax), eps_s.value)
+    X   = R*np.cos(th)+C.real
+    Y   = R*np.sin(th)+C.imag
+
+    # Generate the new curveeps_s
+    bigC.data     = dict(x=X, y=Y)
+    bigC_cen.data = dict(x=[C.real], y=[C.imag])
+    for k in range(0,Nom):
+        x = r*np.cos(th)+c[k].real
+        y = r*np.sin(th)+c[k].imag
+        circ[k].data = dict(x=x, y=y)
+        circ_cen[k].data = dict(x=[c[k].real], y=[c[k].imag])
+
+
+for w in [tau_re_s, tau_im_s]:
+    w.on_change('value', update_data1)
+for w in [eps_s, fmin_s, fmax_s]:
+    w.on_change('value', update_data2)
+
+    
+# Set up layouts and add to document
+inputs_1 = widgetbox(tau_re_s, tau_im_s, eps_s)
+inputs_2 = widgetbox(Nom_text, fmin_s, fmax_s)
+inputs_3 = vform(reset)
+spacer_1 = Spacer(width=20, height=60)
+
+curdoc().add_root(row(column(inputs_1, spacer_1, inputs_2, inputs_3), plot, width=1200))
+curdoc().title = "Optimal tau"

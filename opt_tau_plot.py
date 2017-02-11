@@ -2,7 +2,7 @@ from numpy import pi, sin, cos, sqrt
 from math import atan2, atan
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider, Button, RadioButtons
+from matplotlib.widgets import Slider, Button
 
 axis_color = 'lightgoldenrodyellow'
 Nom_min = 3
