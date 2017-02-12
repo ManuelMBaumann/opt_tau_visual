@@ -96,8 +96,12 @@ for k in range(0,len(om)):
 
 # Set up plot
 plot = figure(plot_height=640, plot_width=640, title="optimal_tau",
-              tools="crosshair,pan,reset,save,wheel_zoom",
+              tools="pan,box_zoom,reset,save,wheel_zoom", active_drag=None,
               x_range=[-2, 2], y_range=[-1, 3])
+
+plot.line(x=[-10,10],y=[0,0], line_width=1, line_color='black')
+plot.line(x=[0,0],y=[10,-10], line_width=1, line_color='black')
+
 
 mytext  = Label(x=-1.8, y=2.7, text='J = '+str(round(Jopt,4)), text_font_size='22pt')
 mytext2 = Label(x=-1.8, y=2.5, text='J* = '+str(round(Jopt,4)), text_font_size='16pt', text_color="grey")
