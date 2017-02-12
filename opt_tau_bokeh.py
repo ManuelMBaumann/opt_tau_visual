@@ -190,7 +190,9 @@ def update_data2(attrname, old, new):
      
 
 def click():
-    opt_tau = opt_tau_anal(eps_s.value,2*pi*fmin_s.value,2*pi*fmax_s.value)
+    fmin = fmin_s.value
+    fmax = fmax_s.value
+    opt_tau = opt_tau_anal(eps_s.value,2*pi*fmin,2*pi*fmax)
     tau_re_s.value = opt_tau.real/(2*pi*fmax)
     tau_im_s.value = opt_tau.imag/(2*pi*fmax)
     
