@@ -15,7 +15,7 @@ in your browser.
 from bokeh.io import curdoc, vform
 from bokeh.layouts import row, column, widgetbox
 from bokeh.models import ColumnDataSource, Spacer, Label
-from bokeh.models.widgets import Slider, TextInput, Button
+from bokeh.models.widgets import Slider, TextInput, Button, RangeSlider
 from bokeh.plotting import figure
 from bokeh.models.widgets import Div
 
@@ -117,14 +117,14 @@ for k in range(0,len(om)):
 
 
 # Set up widgets
-tau_re_s = Slider(title="Real(tau)", value=tau.real/(2*pi*fmax), start=0.0, end=1.0, step=0.001)
-tau_im_s = Slider(title="Imag(tau)", value=tau.imag/(2*pi*fmax), start=-1.0, end=0.0, step=0.001)
+tau_re_s = Slider(title="Real part", value=tau.real/(2*pi*fmax), start=0.0, end=1.0, step=0.001)
+tau_im_s = Slider(title="Imag part", value=tau.imag/(2*pi*fmax), start=-1.0, end=0.0, step=0.001)
 
-eps_s    = Slider(title="damping", value=eps, start=0.0, end=1.0, step=0.01)
+eps_s    = Slider(title="viscous damping", value=eps, start=0.0, end=1.0, step=0.01)
 Nom_text = TextInput(title="n_f = ", value=str(Nom))
 fmin_s   = Slider(title="f_min [Hz]", value=fmin, start=0.0, end=15.0, step=0.1)
 fmax_s   = Slider(title="f_max [Hz]", value=fmax, start=0.0, end=15.0, step=0.1)
-#frange_s = RangeSlider(start=0.0, end=15.0, range=(fmin,fmax), step=0.1, title="freq range [Hz]")
+frange_s = RangeSlider(start=0.0, end=15.0, range=(fmin,fmax), step=0.1, title="freq. range [Hz]")
 #frange_s = DateRangeSlider(bounds=(0.0,15.0), value=(fmin,fmax), title="freq range [Hz]")
 
 
@@ -138,8 +138,11 @@ Nom_text.on_change('value', update_title)
 def update_data1(attrname, old, new):
 
     # Get the current slider values
-    fmin = fmin_s.value
-    fmax = fmax_s.value
+    #fmin = fmin_s.value
+    #fmax = fmax_s.value
+    fmin = frange_s.range[0]
+    fmax = frange_s.range[1]
+    
     Nom  = int(Nom_text.value)
     freq = np.linspace(fmin,fmax,Nom)
     
@@ -163,8 +166,10 @@ def update_data1(attrname, old, new):
 def update_data2(attrname, old, new):
 
     # Get the current slider values
-    fmin = fmin_s.value
-    fmax = fmax_s.value
+    #fmin = fmin_s.value
+    #fmax = fmax_s.value
+    fmin = frange_s.range[0]
+    fmax = frange_s.range[1]
     Nom  = int(Nom_text.value)
     freq = np.linspace(fmin,fmax,Nom)
     
@@ -191,8 +196,10 @@ def update_data2(attrname, old, new):
     mytext2.text = 'J* = '+str(round(Jopt,4))
      
 def click():
-    fmin = fmin_s.value
-    fmax = fmax_s.value
+    #fmin = fmin_s.value
+    #fmax = fmax_s.value
+    fmin = frange_s.range[0]
+    fmax = frange_s.range[1]
     opt_tau = opt_tau_anal(eps_s.value,2*pi*fmin,2*pi*fmax)
     tau_re_s.value = opt_tau.real/(2*pi*fmax)
     tau_im_s.value = opt_tau.imag/(2*pi*fmax)
@@ -200,31 +207,27 @@ def click():
 
 for w in [tau_re_s, tau_im_s]:
     w.on_change('value', update_data1)
-for ww in [eps_s, fmin_s, fmax_s]:
-    ww.on_change('value', update_data2)
+eps_s.on_change('value', update_data2)
+frange_s.on_change('range', update_data2)    
 reset.on_click(click)
     
 
 # Set up layouts and add to document
 inputs_1 = widgetbox(tau_re_s, tau_im_s)
 #inputs_2 = widgetbox(Nom_text, fmin_s, fmax_s, eps_s)
-inputs_2 = widgetbox(fmin_s, fmax_s, eps_s)
+inputs_2 = widgetbox(frange_s, eps_s)
+inputs_2 = widgetbox(frange_s, eps_s)
 inputs_3 = vform(reset)
 spacer_1 = Spacer(width=20, height=40)
 spacer_2 = Spacer(width=20, height=40)
-spacer_3 = Spacer(width=20, height=90)
+spacer_3 = Spacer(width=20, height=130)
 
-#preprint_ref = '<a href="http://www.ewi.tudelft.nl/en/the-faculty/departments/applied-mathematics/reports/">here</a>'
-
-#div1 = Div(text="""Your <a href="https://en.wikipedia.org/wiki/HTML">HTML</a>-supported text is initialized with the <b>text</b> argument. The remaining div arguments are <b>width</b> and <b>height</b>. For this example, those values
-#are <i>200</i> and <i>100</i> respectively.""",
-#width=200, height=100)
 
 div1 = Div(text="""<font size="4"><b>Seed parameter tau</b></font> <br> (relative w.r.t. f_max)""",
 width=300, height=30)
 text1 = widgetbox(div1)
 
-div2 = Div(text="""<font size="4"><b>Frequency range</b></font>""",
+div2 = Div(text="""<font size="4"><b>Frequency range & damping</b></font>""",
 width=300, height=20)
 text2 = widgetbox(div2)
 
