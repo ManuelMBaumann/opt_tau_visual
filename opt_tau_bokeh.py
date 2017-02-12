@@ -22,6 +22,7 @@ import numpy as np
 from numpy import pi, sin, cos, sqrt
 from math import atan2, atan
 
+NOP = 50
 
 def opt_tau_anal(e,w,W):    
     r  = sqrt(w*W*(1.0+e**2))
@@ -32,7 +33,7 @@ def J_opt(e, w, W):
     tau = opt_tau_anal(e,w,W)
     r     = 0.5*np.sqrt(1.0 + (tau.real/tau.imag)**2)
     c1_im = tau.real/(2.0*tau.imag) - ((tau.imag+e*tau.real)*w)/((w-tau.real)**2+(e*w+tau.imag)**2)
-    cN_im = tau.real/(2.0*tau.imag) - ((tau.imag+e*tau.real)*W)/((W-tau.real)**2+(e*W+tau.imag)**2)
+    #cN_im = tau.real/(2.0*tau.imag) - ((tau.imag+e*tau.real)*W)/((W-tau.real)**2+(e*W+tau.imag)**2)
     R     = np.sqrt(tau.real**2+tau.imag**2)*np.sqrt((e**2+1.0))/(2.0*abs(tau.real*e+tau.imag))
     C_im  = e*(tau.real**2+tau.imag**2)/(2.0*tau.imag*(tau.real*e+tau.imag))
     return np.sqrt(r**2/(R**2-C_im**2+2.0*C_im*c1_im))
@@ -67,7 +68,6 @@ freq = np.linspace(fmin,fmax,Nom)
 om   = 2.0*np.pi*freq*(1.0-1j*eps)
 tau  = opt_tau_anal(eps,om[0].real,om[-1].real) 
 Jopt = J_opt(eps, min(om.real), max(om.real))
-NOP  = 100
 th   = np.linspace(0.0, 2.0*pi, NOP)
 
 cc  = list(['green','blue','cyan','magenta','yellow'])
@@ -81,9 +81,9 @@ for k in range(1,Nom-1):
 col.append('red')
 
 C, R, c, r = calc_circles(freq, tau, eps)
-X   = R*np.cos(th)+C.real
-Y   = R*np.sin(th)+C.imag
-bigC = ColumnDataSource(data=dict(x=X, y=Y))
+X = R*np.cos(th)+C.real
+Y = R*np.sin(th)+C.imag
+bigC     = ColumnDataSource(data=dict(x=X, y=Y))
 bigC_cen = ColumnDataSource(data=dict(x=[C.real], y=[C.imag]))
 
 circ = []
@@ -101,7 +101,6 @@ plot = figure(plot_height=640, plot_width=640, title="optimal_tau",
 
 plot.line(x=[-10,10],y=[0,0], line_width=1, line_color='black')
 plot.line(x=[0,0],y=[10,-10], line_width=1, line_color='black')
-
 
 mytext  = Label(x=-1.8, y=2.7, text='J = '+str(round(Jopt,4)), text_font_size='22pt')
 mytext2 = Label(x=-1.8, y=2.5, text='J* = '+str(round(Jopt,4)), text_font_size='16pt', text_color="grey")
@@ -150,7 +149,7 @@ def update_data1(attrname, old, new):
     for k in range(0,Nom):
         x = r*np.cos(th)+c[k].real
         y = r*np.sin(th)+c[k].imag
-        circ[k].data = dict(x=x, y=y)
+        circ[k].data     = dict(x=x, y=y)
         circ_cen[k].data = dict(x=[c[k].real], y=[c[k].imag])
         
     Jnew = J(2.0*pi*freq*(1.0-1j*eps_s.value), tau_re_s.value*(2*pi*fmax)+1j*tau_im_s.value*(2*pi*fmax))
@@ -187,8 +186,6 @@ def update_data2(attrname, old, new):
     mytext.text = 'J = '+str(round(Jnew,4))
     mytext2.text = 'J* = '+str(round(Jopt,4))
      
-     
-
 def click():
     fmin = fmin_s.value
     fmax = fmax_s.value
@@ -203,13 +200,13 @@ for ww in [eps_s, fmin_s, fmax_s]:
     ww.on_change('value', update_data2)
 reset.on_click(click)
     
+
 # Set up layouts and add to document
 inputs_1 = widgetbox(tau_re_s, tau_im_s, eps_s)
 inputs_2 = widgetbox(Nom_text, fmin_s, fmax_s)
 inputs_3 = vform(reset)
 spacer_1 = Spacer(width=20, height=60)
 spacer_2 = Spacer(width=20, height=180)
-
 
 curdoc().add_root(row(column(inputs_1, spacer_1, inputs_2, spacer_2, inputs_3), plot, width=1200))
 curdoc().title = "Optimal tau"
